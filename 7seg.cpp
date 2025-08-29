@@ -2,59 +2,54 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_LEDBackpack.h>
 
-// HT16K33 4桁7セグのオブジェクト
 Adafruit_7segment display = Adafruit_7segment();
-
-// VCC -> Arduino 5V
-// GND -> Arduino GND
-// SDA -> Arduino A4
-// SCL -> Arduino A5
-
-#define BUTTON_PIN 2 // 接続ピン
+#define BUTTON_PIN 2  // 1つのボタン
 
 void setup() {
-  pinMode(BUTTON_PIN, INPUT_PULLUP); // プルアップ入力
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
   display.begin(0x70);
   display.setBrightness(15);
-  display.print(0);
-  display.writeDisplay();
 }
 
 void loop() {
-  static int counter = 0;
-  static int lastState = HIGH;
+  static int leftCounter = 0;        // 左側 00スタート
+  static int rightCounter = 50;      // 右側 50秒
+  static bool rightCountingDown = false;
+  static int lastButtonState = HIGH;
+  static unsigned long lastMillis = 0;
 
+  unsigned long currentMillis = millis();
   int buttonState = digitalRead(BUTTON_PIN);
 
-  // ボタンが押された瞬間だけカウント
-  if (lastState == HIGH && buttonState == LOW) {
-    counter++;
-    if (counter > 9999) counter = 0;
-    display.print(counter);
-    display.writeDisplay();
+  // ボタンが押された瞬間の処理
+  if (lastButtonState == HIGH && buttonState == LOW) {
+    leftCounter++;
+    if (leftCounter > 99) leftCounter = 0;
+
+    rightCounter = 50;         // ボタンで右側カウントリセット
+    rightCountingDown = true;
+
     delay(150); // チャタリング防止
   }
+  lastButtonState = buttonState;
 
-  lastState = buttonState;
+  // 右側カウンター処理
+  if (currentMillis - lastMillis >= 1000) {
+    lastMillis = currentMillis;
+
+    if (rightCountingDown) {
+      rightCounter--;
+      if (rightCounter <= 0) {
+        rightCounter = 0;
+        rightCountingDown = false; // カウントアップに切替
+      }
+    } else {
+      if (rightCounter < 99) rightCounter++; // 上限99
+    }
+  }
+
+  // 左右2桁結合して4桁表示
+  int displayValue = leftCounter * 100 + rightCounter;
+  display.print(displayValue, DEC);
+  display.writeDisplay();
 }
-
-
-// void setup() {
-//   display.begin(0x70);       // デフォルトI2Cアドレスは 0x70
-//   display.setBrightness(15); // 輝度 (0〜15)
-// }
-
-// void loop() {
-//   static int counter = 0;
-
-//   // 数字を表示
-//   display.print(counter);
-//   display.writeDisplay();
-
-//   delay(1000); // 1秒ごとにカウントアップ
-
-//   counter++;
-//   if (counter > 9999) {
-//     counter = 0;
-//   }
-// }
