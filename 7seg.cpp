@@ -10,22 +10,51 @@ Adafruit_7segment display = Adafruit_7segment();
 // SDA -> Arduino A4
 // SCL -> Arduino A5
 
+#define BUTTON_PIN 2 // 接続ピン
+
 void setup() {
-  display.begin(0x70);       // デフォルトI2Cアドレスは 0x70
-  display.setBrightness(15); // 輝度 (0〜15)
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // プルアップ入力
+  display.begin(0x70);
+  display.setBrightness(15);
+  display.print(0);
+  display.writeDisplay();
 }
 
 void loop() {
   static int counter = 0;
+  static int lastState = HIGH;
 
-  // 数字を表示
-  display.print(counter);
-  display.writeDisplay();
+  int buttonState = digitalRead(BUTTON_PIN);
 
-  delay(1000); // 1秒ごとにカウントアップ
-
-  counter++;
-  if (counter > 9999) {
-    counter = 0;
+  // ボタンが押された瞬間だけカウント
+  if (lastState == HIGH && buttonState == LOW) {
+    counter++;
+    if (counter > 9999) counter = 0;
+    display.print(counter);
+    display.writeDisplay();
+    delay(150); // チャタリング防止
   }
+
+  lastState = buttonState;
 }
+
+
+// void setup() {
+//   display.begin(0x70);       // デフォルトI2Cアドレスは 0x70
+//   display.setBrightness(15); // 輝度 (0〜15)
+// }
+
+// void loop() {
+//   static int counter = 0;
+
+//   // 数字を表示
+//   display.print(counter);
+//   display.writeDisplay();
+
+//   delay(1000); // 1秒ごとにカウントアップ
+
+//   counter++;
+//   if (counter > 9999) {
+//     counter = 0;
+//   }
+// }
